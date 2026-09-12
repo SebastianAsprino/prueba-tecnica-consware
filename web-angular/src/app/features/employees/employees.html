@@ -1,0 +1,67 @@
+<div class="max-w-3xl mx-auto p-4 sm:p-8">
+  <h1 class="text-2xl font-bold mb-6">Empleados</h1>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error mb-4">
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <div class="grid gap-6 sm:grid-cols-2 mb-8">
+    <div class="card bg-base-100 border border-base-300 p-4">
+      <h2 class="font-semibold mb-3">Crear empleado</h2>
+      <form class="flex gap-2" (ngSubmit)="createEmployee()">
+        <input
+          class="input input-bordered w-full"
+          placeholder="Nombre del empleado"
+          name="newEmployeeName"
+          [(ngModel)]="newEmployeeName"
+        />
+        <button class="btn btn-primary" type="submit">Crear</button>
+      </form>
+    </div>
+
+    <div class="card bg-base-100 border border-base-300 p-4">
+      <h2 class="font-semibold mb-3">Importar por CSV</h2>
+      <p class="text-sm text-base-content/70 mb-2">Un nombre por línea, columna <code>Name</code> opcional como encabezado.</p>
+      <input #fileInput class="file-input file-input-bordered w-full" type="file" accept=".csv" (change)="onCsvSelected($event)" />
+
+      @if (importResult(); as result) {
+        <div class="mt-3 text-sm">
+          @if (result.created.length > 0) {
+            <p class="text-success mb-1">Creados: {{ result.created.length }}</p>
+            <ul class="mb-2">
+              @for (employee of result.created; track employee.id) {
+                <li>{{ employee.name }} — código <code>{{ employee.accessCode }}</code></li>
+              }
+            </ul>
+          }
+          @if (result.skipped.length > 0) {
+            <p class="text-warning">
+              Omitidos: {{ result.skipped.length }}
+              @for (item of result.skipped; track item.line) {
+                <span class="block">Línea {{ item.line }} ({{ item.value }}): {{ item.reason }}</span>
+              }
+            </p>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <h2 class="font-semibold mb-3">Empleados registrados ({{ employees().length }})</h2>
+  @if (loading()) {
+    <p>Cargando...</p>
+  } @else if (employees().length === 0) {
+    <p class="text-base-content/70">Aún no hay empleados registrados.</p>
+  } @else {
+    <ul class="divide-y divide-base-300 border border-base-300 rounded-box">
+      @for (employee of employees(); track employee.id) {
+        <li class="p-3 flex items-center justify-between">
+          <span>{{ employee.name }}</span>
+          <code class="text-sm bg-base-200 px-2 py-1 rounded">{{ employee.accessCode }}</code>
+        </li>
+      }
+    </ul>
+  }
+</div>
