@@ -1,0 +1,106 @@
+<div class="max-w-5xl mx-auto p-4 sm:p-8">
+  <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold">Solicitudes de reembolso</h1>
+    <label class="flex items-center gap-2">
+      <span class="text-sm font-medium">Estado:</span>
+      <select
+        class="select select-bordered select-sm"
+        [value]="statusFilter()"
+        (change)="onFilterChange($any($event.target).value)"
+      >
+        <option value="Pending">Pendientes</option>
+        <option value="Approved">Aprobadas</option>
+        <option value="Rejected">Rechazadas</option>
+        <option value="">Todas</option>
+      </select>
+    </label>
+  </header>
+
+  @if (actionErrorMessage()) {
+    <div class="alert alert-error mb-4">
+      <span>{{ actionErrorMessage() }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="flex items-center gap-2 text-base-content/70">
+      <span class="loading loading-spinner loading-sm"></span>
+      Cargando...
+    </div>
+  } @else if (errorMessage()) {
+    <div class="alert alert-error">
+      <span>{{ errorMessage() }}</span>
+    </div>
+  } @else if (requests().length === 0) {
+    <p class="text-base-content/70">No hay solicitudes para este filtro.</p>
+  } @else {
+    <div class="overflow-x-auto rounded-box border border-base-300 bg-base-100 shadow-sm">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Monto</th>
+            <th>Categoría</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Motivo rechazo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr class="hover">
+              <td>{{ request.employeeName }}</td>
+              <td>{{ request.amount | number: '1.0-0' }}</td>
+              <td>{{ request.category }}</td>
+              <td>{{ request.description }}</td>
+              <td>
+                <span class="badge" [class]="statusBadgeClass(request.status)">{{ request.status }}</span>
+              </td>
+              <td>{{ request.rejectionReason ?? '—' }}</td>
+              <td>
+                @if (request.status === 'Pending') {
+                  <div class="flex gap-2">
+                    <button class="btn btn-sm btn-success" (click)="approve(request)">Aprobar</button>
+                    <button class="btn btn-sm btn-error btn-outline" (click)="openRejectModal(request)">Rechazar</button>
+                  </div>
+                } @else {
+                  <span class="text-base-content/50">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (rejectingRequest(); as request) {
+  <div class="modal modal-open">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Rechazar solicitud</h3>
+      <p class="py-2 text-sm text-base-content/70">
+        {{ request.employeeName }} · {{ request.amount | number: '1.0-0' }} · {{ request.category }}
+      </p>
+      <label class="form-control w-full">
+        <span class="label-text">Motivo del rechazo <span class="text-error">*</span></span>
+        <textarea
+          class="textarea textarea-bordered w-full mt-1"
+          rows="3"
+          [ngModel]="rejectReason()"
+          (ngModelChange)="rejectReason.set($event)"
+          placeholder="Explica por qué se rechaza esta solicitud"
+        ></textarea>
+      </label>
+      @if (rejectReasonError()) {
+        <p class="text-error text-sm mt-1">{{ rejectReasonError() }}</p>
+      }
+      <div class="modal-action">
+        <button class="btn" (click)="closeRejectModal()">Cancelar</button>
+        <button class="btn btn-error" (click)="confirmReject()">Confirmar rechazo</button>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="closeRejectModal()"></div>
+  </div>
+}
