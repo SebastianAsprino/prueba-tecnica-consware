@@ -1,10 +1,16 @@
 using System.Text.Json.Serialization;
+using DotNetEnv;
 using ExpenseReimbursement.Api.Common;
 using ExpenseReimbursement.Api.Features.Auth;
 using ExpenseReimbursement.Api.Features.Employees;
 using ExpenseReimbursement.Api.Features.ExpenseRequests;
 using ExpenseReimbursement.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+
+// Carga .env (si existe) a variables de entorno del proceso ANTES de construir la config,
+// para que Admin__Username/Admin__Password lleguen a IOptions<AdminOptions> como cualquier
+// otra variable de entorno estándar de ASP.NET Core.
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
