@@ -1,0 +1,41 @@
+@if (!authService.isLoggedIn()) {
+  <app-login />
+} @else {
+  <div class="navbar bg-base-100 border-b border-base-300 px-4 sm:px-8">
+    <div class="flex-1 flex gap-2">
+      <button
+        class="btn btn-sm"
+        [class.btn-primary]="activeTab() === 'requests'"
+        [class.btn-ghost]="activeTab() !== 'requests'"
+        (click)="setTab('requests')"
+      >
+        Solicitudes
+      </button>
+      <button
+        class="btn btn-sm"
+        [class.btn-primary]="activeTab() === 'employees'"
+        [class.btn-ghost]="activeTab() !== 'employees'"
+        (click)="setTab('employees')"
+      >
+        Empleados
+      </button>
+      <button
+        class="btn btn-sm"
+        [class.btn-primary]="activeTab() === 'historial'"
+        [class.btn-ghost]="activeTab() !== 'historial'"
+        (click)="setTab('historial')"
+      >
+        Historial
+      </button>
+    </div>
+    <button class="btn btn-sm btn-outline" (click)="logout()">Salir</button>
+  </div>
+
+  @if (activeTab() === 'requests') {
+    <app-requests-table />
+  } @else if (activeTab() === 'employees') {
+    <app-employees />
+  } @else {
+    <app-historial />
+  }
+}
