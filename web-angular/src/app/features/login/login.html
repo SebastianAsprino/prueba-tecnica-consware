@@ -1,0 +1,35 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <form class="card w-full max-w-sm bg-base-100 border border-base-300 shadow-sm p-6" (ngSubmit)="submit()">
+    <h1 class="text-xl font-bold mb-4">Panel del aprobador</h1>
+
+    @if (errorMessage()) {
+      <div class="alert alert-error mb-4">
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <label class="fieldset-label mb-1">Usuario</label>
+    <input
+      class="input input-bordered w-full mb-3"
+      name="username"
+      [(ngModel)]="username"
+      autocomplete="username"
+    />
+
+    <label class="fieldset-label mb-1">Contraseña</label>
+    <input
+      class="input input-bordered w-full mb-4"
+      type="password"
+      name="password"
+      [(ngModel)]="password"
+      autocomplete="current-password"
+    />
+
+    <button class="btn btn-primary w-full" type="submit" [disabled]="loading()">
+      @if (loading()) {
+        <span class="loading loading-spinner loading-sm"></span>
+      }
+      Ingresar
+    </button>
+  </form>
+</div>
