@@ -30,7 +30,7 @@ El login **no es cosmético**: `login.ts` llama a `POST /api/auth/login` en el A
 - se adjunta automáticamente como header `X-Admin-Token` en cada petición saliente gracias a `authInterceptor`,
 - si el API responde 401 (token vencido o inválido), el interceptor desloguea automáticamente y vuelve a mostrar el login.
 
-Credenciales por defecto (definidas en el API): `admin` / `admin123`.
+Credenciales: las que definas en el `.env` del API (`Admin__Username` / `Admin__Password`; la plantilla `.env.example` trae `admin` / `change-me`).
 
 ## Funcionalidades por pestaña
 
@@ -48,6 +48,12 @@ npm install
 npm start          # equivalente a: ng serve
 ```
 
+Tests unitarios (Vitest vía `ng test`):
+
+```bash
+npm test -- --watch=false
+```
+
 Queda en `http://localhost:4200`. CSS con Tailwind v4 + DaisyUI (tema `silk`), configurado en `.postcssrc.json` y `src/styles.css`.
 
 ## Decisiones técnicas
@@ -61,5 +67,5 @@ Queda en `http://localhost:4200`. CSS con Tailwind v4 + DaisyUI (tema `silk`), c
 
 - Guards de ruta reales si en algún momento se agrega `@angular/router` (hoy la protección de vistas es solo un `@if` sobre `isLoggedIn()`, suficiente porque todas las llamadas HTTP igual exigen el token del backend).
 - Paginación en las tablas de Solicitudes/Historial cuando el volumen de datos crezca.
-- Tests unitarios de componentes y del interceptor de auth.
+- Más tests unitarios de componentes y del interceptor de auth (hoy hay tests del componente raíz y del helper de errores `core/http-error.ts`).
 - Editar/eliminar un empleado (hoy solo se puede crear).

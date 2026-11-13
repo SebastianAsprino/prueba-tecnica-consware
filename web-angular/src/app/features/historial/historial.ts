@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeHttpError } from '../../core/http-error';
 import { ExpenseRequestService } from '../../core/expense-request.service';
 import { ExpenseRequest } from '../../core/expense-request.model';
 
@@ -55,7 +56,7 @@ export class Historial {
         this.loading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.errorMessage.set(this.describeError(err));
+        this.errorMessage.set(describeHttpError(err));
         this.loading.set(false);
       },
     });
@@ -138,16 +139,5 @@ export class Historial {
   private escapeCsvValue(value: string | number): string {
     const text = String(value);
     return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-  }
-
-  private describeError(err: HttpErrorResponse): string {
-    if (err.status === 0) {
-      return 'No se pudo conectar con la API. Verifica que esté corriendo en http://localhost:5098.';
-    }
-    const apiErrors = err.error?.errors as string[] | undefined;
-    if (apiErrors?.length) {
-      return apiErrors.join(' ');
-    }
-    return `Ocurrió un error inesperado (código ${err.status}).`;
   }
 }

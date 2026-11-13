@@ -1,6 +1,54 @@
-@ExpenseReimbursement.Api_HostAddress = http://localhost:5098
+@HostAddress = http://localhost:5098
+@AdminToken = pega-aqui-el-token-del-login
 
-GET {{ExpenseReimbursement.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Login del aprobador (credenciales definidas en .env)
+POST {{HostAddress}}/api/auth/login
+Content-Type: application/json
 
-###
+{
+  "username": "admin",
+  "password": "change-me"
+}
+
+### Crear empleado (requiere token de admin)
+POST {{HostAddress}}/api/employees
+Content-Type: application/json
+X-Admin-Token: {{AdminToken}}
+
+{
+  "name": "Ana Pérez"
+}
+
+### Listar empleados (requiere token de admin)
+GET {{HostAddress}}/api/employees
+X-Admin-Token: {{AdminToken}}
+
+### Identificar empleado por su código de acceso
+GET {{HostAddress}}/api/employees/by-code/0123456789
+
+### Registrar un gasto (≤ 500.000 se aprueba solo)
+POST {{HostAddress}}/api/expense-requests
+Content-Type: application/json
+
+{
+  "employeeId": 1,
+  "amount": 120000,
+  "category": "Transporte",
+  "description": "Taxi al aeropuerto"
+}
+
+### Listar solicitudes (filtros opcionales: status, employeeId)
+GET {{HostAddress}}/api/expense-requests?status=Pending
+
+### Aprobar una solicitud pendiente (requiere token de admin)
+POST {{HostAddress}}/api/expense-requests/1/approve
+X-Admin-Token: {{AdminToken}}
+
+### Rechazar una solicitud pendiente (requiere token de admin)
+POST {{HostAddress}}/api/expense-requests/1/reject
+Content-Type: application/json
+X-Admin-Token: {{AdminToken}}
+
+{
+  "reason": "Falta la factura"
+}

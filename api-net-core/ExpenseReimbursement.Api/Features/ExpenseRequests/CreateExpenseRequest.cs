@@ -23,9 +23,17 @@ public class CreateExpenseRequestHandler(AppDbContext db) : IRequestHandler<Crea
         {
             errors.Add("La categoría es obligatoria.");
         }
+        else if (command.Category.Length > ExpenseRequest.CategoryMaxLength)
+        {
+            errors.Add($"La categoría no puede superar {ExpenseRequest.CategoryMaxLength} caracteres.");
+        }
         if (string.IsNullOrWhiteSpace(command.Description))
         {
             errors.Add("La descripción es obligatoria.");
+        }
+        else if (command.Description.Length > ExpenseRequest.DescriptionMaxLength)
+        {
+            errors.Add($"La descripción no puede superar {ExpenseRequest.DescriptionMaxLength} caracteres.");
         }
 
         if (errors.Count > 0)
@@ -44,20 +52,9 @@ public class CreateExpenseRequestHandler(AppDbContext db) : IRequestHandler<Crea
         db.ExpenseRequests.Add(request);
         await db.SaveChangesAsync(cancellationToken);
 
-        var dto = new ExpenseRequestDto(
-            request.Id,
-            employee.Id,
-            employee.Name,
-            request.Amount,
-            request.Category,
-            request.Description,
-            request.Status,
-            request.AutoApproved,
-            request.RejectionReason,
-            request.CreatedAt,
-            request.DecidedAt);
-
-        return AppResult<ExpenseRequestDto>.Ok(dto);
+        // El empleado ya está trackeado por el DbContext, así que EF Core enlaza
+        // request.Employee al agregar la solicitud (no hace falta otra consulta).
+        return AppResult<ExpenseRequestDto>.Ok(ExpenseRequestDto.FromDomain(request));
     }
 }
 

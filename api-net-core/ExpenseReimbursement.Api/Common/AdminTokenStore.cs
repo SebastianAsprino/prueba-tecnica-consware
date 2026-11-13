@@ -3,15 +3,27 @@ using System.Security.Cryptography;
 
 namespace ExpenseReimbursement.Api.Common;
 
-public class AdminTokenStore
+/// <summary>
+/// Almacén en memoria de tokens opacos del administrador. Los tokens se generan con
+/// un CSPRNG (256 bits) y expiran tras <see cref="TokenLifetime"/>.
+/// </summary>
+public class AdminTokenStore(TimeProvider timeProvider)
 {
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(8);
-    private readonly ConcurrentDictionary<string, DateTime> _tokens = new();
+    public static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(8);
+    private const int TokenSizeInBytes = 32;
+
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _tokens = new();
+
+    public AdminTokenStore() : this(TimeProvider.System)
+    {
+    }
 
     public string Issue()
     {
-        var token = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
-        _tokens[token] = DateTime.UtcNow.Add(TokenLifetime);
+        RemoveExpiredTokens();
+
+        var token = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(TokenSizeInBytes));
+        _tokens[token] = timeProvider.GetUtcNow().Add(TokenLifetime);
         return token;
     }
 
@@ -27,12 +39,27 @@ public class AdminTokenStore
             return false;
         }
 
-        if (expiresAt < DateTime.UtcNow)
+        if (expiresAt < timeProvider.GetUtcNow())
         {
             _tokens.TryRemove(token, out _);
             return false;
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Evita que el diccionario crezca sin límite con tokens que nunca se vuelven a usar.
+    /// </summary>
+    private void RemoveExpiredTokens()
+    {
+        var now = timeProvider.GetUtcNow();
+        foreach (var (token, expiresAt) in _tokens)
+        {
+            if (expiresAt < now)
+            {
+                _tokens.TryRemove(token, out _);
+            }
+        }
     }
 }

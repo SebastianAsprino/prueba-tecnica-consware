@@ -1,5 +1,6 @@
 using ExpenseReimbursement.Api.Common;
 using ExpenseReimbursement.Api.Contracts;
+using ExpenseReimbursement.Api.Domain;
 using ExpenseReimbursement.Api.Infrastructure;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,12 @@ public class RejectExpenseRequestHandler(AppDbContext db) : IRequestHandler<Reje
         if (string.IsNullOrWhiteSpace(command.Reason))
         {
             return AppResult<ExpenseRequestDto>.ValidationError("El motivo de rechazo es obligatorio.");
+        }
+
+        if (command.Reason.Length > ExpenseRequest.RejectionReasonMaxLength)
+        {
+            return AppResult<ExpenseRequestDto>.ValidationError(
+                $"El motivo de rechazo no puede superar {ExpenseRequest.RejectionReasonMaxLength} caracteres.");
         }
 
         if (!entity.TryReject(command.Reason, out var error))

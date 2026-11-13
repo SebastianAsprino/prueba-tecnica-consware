@@ -14,10 +14,13 @@ public class LoginHandler(IOptions<AdminOptions> adminOptions, AdminTokenStore t
     {
         var admin = adminOptions.Value;
 
-        var isValid = !string.IsNullOrEmpty(command.Username)
-            && !string.IsNullOrEmpty(command.Password)
-            && command.Username == admin.Username
-            && command.Password == admin.Password;
+        var hasCredentials = !string.IsNullOrEmpty(command.Username) && !string.IsNullOrEmpty(command.Password);
+
+        // Se evalúan ambas comparaciones siempre (operador & sin cortocircuito) para que
+        // el tiempo de respuesta no revele si el usuario era correcto.
+        var isValid = hasCredentials
+            & SecureCompare.FixedTimeEquals(command.Username, admin.Username)
+            & SecureCompare.FixedTimeEquals(command.Password, admin.Password);
 
         if (!isValid)
         {
@@ -38,6 +41,7 @@ public static class LoginEndpoint
             var result = await sender.Send(new LoginCommand(dto.Username, dto.Password));
             return result.ToOkResult();
         })
+        .RequireRateLimiting(RateLimitingPolicies.Auth)
         .WithName("Login")
         .WithOpenApi();
     }

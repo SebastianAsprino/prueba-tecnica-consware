@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeHttpError } from '../../core/http-error';
 import { ExpenseRequestService } from '../../core/expense-request.service';
 import { ExpenseRequest, ExpenseStatus } from '../../core/expense-request.model';
 
@@ -44,7 +45,7 @@ export class RequestsTable {
         this.loading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.errorMessage.set(this.describeError(err));
+        this.errorMessage.set(describeHttpError(err));
         this.loading.set(false);
       },
     });
@@ -54,7 +55,7 @@ export class RequestsTable {
     this.actionErrorMessage.set(null);
     this.expenseRequestService.approve(request.id).subscribe({
       next: () => this.load(),
-      error: (err: HttpErrorResponse) => this.actionErrorMessage.set(this.describeError(err)),
+      error: (err: HttpErrorResponse) => this.actionErrorMessage.set(describeHttpError(err)),
     });
   }
 
@@ -85,7 +86,7 @@ export class RequestsTable {
         this.closeRejectModal();
         this.load();
       },
-      error: (err: HttpErrorResponse) => this.actionErrorMessage.set(this.describeError(err)),
+      error: (err: HttpErrorResponse) => this.actionErrorMessage.set(describeHttpError(err)),
     });
   }
 
@@ -98,16 +99,5 @@ export class RequestsTable {
       default:
         return 'badge-warning';
     }
-  }
-
-  private describeError(err: HttpErrorResponse): string {
-    if (err.status === 0) {
-      return 'No se pudo conectar con la API. Verifica que esté corriendo en http://localhost:5098.';
-    }
-    const apiErrors = err.error?.errors as string[] | undefined;
-    if (apiErrors?.length) {
-      return apiErrors.join(' ');
-    }
-    return `Ocurrió un error inesperado (código ${err.status}).`;
   }
 }

@@ -40,6 +40,12 @@ public class ImportEmployeesHandler(AppDbContext db) : IRequestHandler<ImportEmp
                 continue;
             }
 
+            if (name.Length > Employee.NameMaxLength)
+            {
+                skipped.Add(new ImportEmployeeErrorDto(lineNumber, name, $"El nombre supera {Employee.NameMaxLength} caracteres."));
+                continue;
+            }
+
             if (existingNames.Contains(name))
             {
                 skipped.Add(new ImportEmployeeErrorDto(lineNumber, name, "Ya existe un empleado con ese nombre."));

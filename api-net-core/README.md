@@ -7,8 +7,10 @@ ASP.NET Core Minimal API (.NET 9) con CQRS (MediatR) y SQLite (EF Core). Es la �
 **CQRS por *vertical slice*, no por capa técnica.** En vez de `Controllers/` + `Services/` + `Repositories/`, cada operación de negocio es un archivo autocontenido en `Features/` con su Command/Query, su Handler y el mapeo del endpoint. `Program.cs` es el composition root: registra servicios y llama a los `Map*Endpoints()` de cada feature.
 
 ```
+ExpenseReimbursement.sln         Solución: API + proyecto de tests
+ExpenseReimbursement.Api.Tests/  Tests xUnit (dominio, auth, handlers contra SQLite en memoria)
 ExpenseReimbursement.Api/
-  Program.cs                     Composition root: DI, CORS, migraciones automáticas, mapeo de endpoints
+  Program.cs                     Composition root: DI, CORS, rate limiting, migraciones automáticas, mapeo de endpoints
   Domain/
     Employee.cs                  Entidad empleado (Id, Name, AccessCode de 10 dígitos)
     ExpenseRequest.cs             Entidad gasto + reglas de negocio (auto-aprobación, transiciones de estado)
@@ -20,6 +22,8 @@ ExpenseReimbursement.Api/
   Common/
     AppResult.cs / AppResultExtensions.cs   Resultado tipado (Ok/NotFound/ValidationError/Conflict/Unauthorized) → HTTP correcto
     AdminOptions.cs / AdminTokenStore.cs / AdminAuthFilter.cs   Autenticación del aprobador (token opaco en memoria)
+    SecureCompare.cs               Comparación de credenciales en tiempo constante
+    RateLimitingPolicies.cs        Límite de intentos por IP en login y búsqueda por código
     AccessCodeGenerator.cs         Genera el código de 10 dígitos único de cada empleado
   Features/
     Auth/Login.cs                  POST /api/auth/login
@@ -36,6 +40,7 @@ ExpenseReimbursement.Api/
   - `Amount > 500_000` → se crea `Pending`.
   - `TryApprove`/`TryReject` solo tienen éxito si el estado actual es `Pending` (si no, error de conflicto).
   - Rechazar sin motivo se valida en el handler antes de tocar la entidad (400, no 409).
+- Longitudes máximas (nombre 200, categoría 100, descripción y motivo de rechazo 500) definidas como constantes en las entidades y usadas tanto por EF Core como por la validación de los handlers (400 si se superan).
 
 ## Autenticación
 
@@ -51,8 +56,14 @@ Las credenciales viven en un archivo **`.env`** en la raíz de `ExpenseReimburse
 ```bash
 # api-net-core/ExpenseReimbursement.Api/.env
 Admin__Username=admin
-Admin__Password=admin123
+Admin__Password=una-clave-propia
 ```
+
+Medidas de seguridad sobre el login y el código de acceso:
+
+- Usuario y contraseña se comparan en **tiempo constante** (`SecureCompare`, hash SHA-256 + `CryptographicOperations.FixedTimeEquals`), para no filtrar por timing cuántos caracteres coinciden.
+- `POST /api/auth/login` y `GET /api/employees/by-code/{code}` tienen **rate limiting** por IP (20 intentos por minuto, luego `429 Too Many Requests`) para frenar la fuerza bruta sobre la clave del admin y sobre los códigos de 10 dígitos.
+- Los tokens se generan con `RandomNumberGenerator` (256 bits) y los vencidos se purgan al emitir uno nuevo.
 
 El doble guion bajo (`Admin__Username`) es la convención estándar de ASP.NET Core para mapear a `Admin:Username` en la configuración anidada — por eso `DotNetEnv` (que solo pone variables de entorno) funciona sin código adicional aparte de `Env.Load()` en `Program.cs`.
 
@@ -81,13 +92,23 @@ Requisitos: **.NET 9 SDK** (el repo se generó apuntando a `net9.0`; si tienes .
 
 ```bash
 cd api-net-core/ExpenseReimbursement.Api
-cp .env.example .env   # deja Admin__Username=admin / Admin__Password=admin123 — cámbiala si quieres
+cp .env.example .env   # define Admin__Username / Admin__Password (la plantilla trae admin / change-me)
 dotnet run
 ```
 
 - No hay ningún paso manual de creación de base de datos: al arrancar, `Program.cs` llama a `Database.Migrate()` y crea `expense-reimbursement.db` (SQLite) si no existe.
 - Por defecto queda en `http://localhost:5098` (perfil `http` de `launchSettings.json`). Swagger UI en `http://localhost:5098/swagger`.
-- CORS abierto a cualquier origen (`AllowAnyOrigin`) — válido para desarrollo local con los otros dos proyectos; **no usar así en producción**.
+- CORS: sin configuración permite cualquier origen (cómodo en desarrollo local con los otros dos proyectos; la API no usa cookies, el token viaja en un header). Para restringirlo, define `Cors__AllowedOrigins__0=http://localhost:4200` (y `__1`, `__2`… si hay más) en `.env`.
+- `ExpenseReimbursement.Api.http` trae ejemplos de todas las rutas para el cliente HTTP de VS Code / Rider / Visual Studio.
+
+### Tests
+
+```bash
+cd api-net-core
+dotnet test
+```
+
+Cubren la regla de negocio (`ExpenseRequest`), el generador de códigos, el almacén de tokens (con `FakeTimeProvider` para la expiración), la comparación en tiempo constante, el login y los handlers de empleados/solicitudes contra una base **SQLite en memoria** (mismo motor que en ejecución, no un mock).
 
 ### Probar rápido con curl
 
@@ -95,7 +116,7 @@ dotnet run
 # login de admin
 curl -X POST http://localhost:5098/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"<tu-clave-del-.env>"}'
 
 # crear empleado (usa el token del paso anterior)
 curl -X POST http://localhost:5098/api/employees \
@@ -114,7 +135,6 @@ curl -X POST http://localhost:5098/api/employees \
 ## Qué falta / mejoras futuras
 
 - JWT con expiración real + refresh token en vez del token opaco en memoria.
-- Tests de integración (WebApplicationFactory) para los 5 endpoints de `ExpenseRequests` y las reglas de negocio.
+- Tests de integración HTTP (WebApplicationFactory) sobre los endpoints completos (hoy se prueban dominio y handlers).
 - Paginación en `GET /api/expense-requests` y `GET /api/employees`.
-- Rate limiting en `POST /api/auth/login` (fuerza bruta sobre el usuario/clave del admin).
 - Endpoint para revocar/rotar el código de acceso de un empleado sin borrar su historial.

@@ -31,6 +31,7 @@ public static class GetEmployeeByAccessCodeEndpoint
             var result = await sender.Send(new GetEmployeeByAccessCodeQuery(code));
             return result.ToOkResult();
         })
+        .RequireRateLimiting(RateLimitingPolicies.Auth)
         .WithName("GetEmployeeByAccessCode")
         .WithOpenApi();
     }

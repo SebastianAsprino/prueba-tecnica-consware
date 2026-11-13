@@ -2,6 +2,8 @@ namespace ExpenseReimbursement.Api.Domain;
 
 public class Employee
 {
+    public const int NameMaxLength = 200;
+
     public int Id { get; private set; }
     public string Name { get; private set; } = default!;
     public string AccessCode { get; private set; } = default!;

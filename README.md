@@ -30,7 +30,7 @@ Un empleado registra un gasto (monto, categoría, descripción). Si el monto es 
    npm install
    npm start
    ```
-   `http://localhost:4200`, login con `admin` / `admin123` (ver sección de credenciales en su README).
+   `http://localhost:4200`, login con el usuario/clave que pusiste en el `.env` del API (ver sección de credenciales en su README).
 
 3. **App Flutter** (empleado) — ver [app-flutter/README.md](app-flutter/README.md). Necesita al menos un empleado creado desde el panel Angular (te da un código de 10 dígitos) para poder "iniciar sesión" en la app.
    ```bash
@@ -38,6 +38,16 @@ Un empleado registra un gasto (monto, categoría, descripción). Si el monto es 
    flutter pub get
    flutter run -d linux   # o el device que tengas disponible
    ```
+
+## Tests
+
+| Proyecto | Comando | Qué cubre |
+|---|---|---|
+| API | `cd api-net-core && dotnet test` | Regla de negocio, auth (tokens, comparación en tiempo constante, login) y handlers contra SQLite en memoria |
+| Angular | `cd web-angular && npm test -- --watch=false` | Componente raíz (gate de login) y helper de errores HTTP |
+| Flutter | `cd app-flutter && flutter test` | Smoke test: sin sesión guardada muestra el login |
+
+El workflow `.github/workflows/api.yml` corre build + tests del API en cada push y pull request.
 
 ## Identificación de usuarios (por qué existe un "login")
 
@@ -54,12 +64,12 @@ El enunciado exime de autenticación explícitamente solo a la app del empleado,
 
 ## Qué quedó fuera por tiempo
 
-- Tests automatizados (unitarios/integración) en los tres proyectos.
+- Tests de integración HTTP de punta a punta y más tests de widgets en Flutter (hoy hay tests unitarios del API con xUnit, del panel Angular con Vitest y un smoke test de widgets en Flutter).
 - Paginación en los listados (API, Angular, Flutter) — con pocos datos no hacía falta, pero no escala.
 - JWT real con expiración/refresh en vez del token opaco en memoria.
 - Registro de auditoría a nivel de base de datos (quién aprobó/rechazó cada solicitud) — hoy solo se guarda la fecha de decisión.
 - Internacionalización / soporte multi-moneda (todo asume COP).
-- CI/CD y contenedores (Docker) para los tres proyectos.
+- CD y contenedores (Docker) para los tres proyectos (hay CI de GitHub Actions solo para build + tests del API).
 
 ## Uso de IA
 

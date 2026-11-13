@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { describeHttpError } from '../../core/http-error';
 import { EmployeeService } from '../../core/employee.service';
 import { Employee, ImportEmployeesResult } from '../../core/employee.model';
 
@@ -33,7 +34,7 @@ export class Employees {
         this.loading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        this.errorMessage.set(this.describeError(err));
+        this.errorMessage.set(describeHttpError(err));
         this.loading.set(false);
       },
     });
@@ -51,7 +52,7 @@ export class Employees {
         this.newEmployeeName = '';
         this.load();
       },
-      error: (err: HttpErrorResponse) => this.errorMessage.set(this.describeError(err)),
+      error: (err: HttpErrorResponse) => this.errorMessage.set(describeHttpError(err)),
     });
   }
 
@@ -68,24 +69,20 @@ export class Employees {
     this.employeeService.importCsv(file).subscribe({
       next: (result) => {
         this.importResult.set(result);
-        this.fileInput()!.nativeElement.value = '';
+        this.resetFileInput();
         this.load();
       },
       error: (err: HttpErrorResponse) => {
-        this.errorMessage.set(this.describeError(err));
-        this.fileInput()!.nativeElement.value = '';
+        this.errorMessage.set(describeHttpError(err));
+        this.resetFileInput();
       },
     });
   }
 
-  private describeError(err: HttpErrorResponse): string {
-    if (err.status === 0) {
-      return 'No se pudo conectar con la API. Verifica que esté corriendo en http://localhost:5098.';
+  private resetFileInput(): void {
+    const input = this.fileInput()?.nativeElement;
+    if (input) {
+      input.value = '';
     }
-    const apiErrors = err.error?.errors as string[] | undefined;
-    if (apiErrors?.length) {
-      return apiErrors.join(' ');
-    }
-    return `Ocurrió un error inesperado (código ${err.status}).`;
   }
 }

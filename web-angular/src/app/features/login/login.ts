@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { API_UNREACHABLE_MESSAGE } from '../../core/http-error';
 
 @Component({
   selector: 'app-login',
@@ -32,9 +33,7 @@ export class Login {
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         this.errorMessage.set(
-          err.status === 401
-            ? 'Usuario o contraseña incorrectos.'
-            : 'No se pudo conectar con la API. Verifica que esté corriendo en http://localhost:5098.',
+          err.status === 401 ? 'Usuario o contraseña incorrectos.' : API_UNREACHABLE_MESSAGE,
         );
       },
     });

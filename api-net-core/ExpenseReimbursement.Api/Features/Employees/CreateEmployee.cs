@@ -19,6 +19,10 @@ public class CreateEmployeeHandler(AppDbContext db) : IRequestHandler<CreateEmpl
         }
 
         var name = command.Name.Trim();
+        if (name.Length > Employee.NameMaxLength)
+        {
+            return AppResult<EmployeeDto>.ValidationError($"El nombre no puede superar {Employee.NameMaxLength} caracteres.");
+        }
 
         var exists = await db.Employees.AnyAsync(e => e.Name.ToLower() == name.ToLower(), cancellationToken);
         if (exists)

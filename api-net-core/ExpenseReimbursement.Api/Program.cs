@@ -23,7 +23,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<AdminTokenStore>();
+builder.Services.AddAppRateLimiting();
 builder.Services.AddScoped<AdminAuthFilter>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -32,10 +34,26 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Orígenes permitidos configurables (Cors__AllowedOrigins__0=http://localhost:4200, ...).
+// Sin configurar se permite cualquier origen: la API no usa cookies ni credenciales de
+// navegador (el token viaja en un header explícito), así que no hay riesgo de CSRF.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicyName, policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        else
+        {
+            policy.AllowAnyOrigin();
+        }
+
+        policy.AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
@@ -53,6 +71,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(CorsPolicyName);
+app.UseRateLimiter();
 
 app.MapLogin();
 app.MapEmployeeEndpoints();

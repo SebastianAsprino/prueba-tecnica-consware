@@ -3,6 +3,9 @@ namespace ExpenseReimbursement.Api.Domain;
 public class ExpenseRequest
 {
     public const decimal AutoApprovalThreshold = 500_000m;
+    public const int CategoryMaxLength = 100;
+    public const int DescriptionMaxLength = 500;
+    public const int RejectionReasonMaxLength = 500;
 
     public int Id { get; private set; }
     public int EmployeeId { get; private set; }

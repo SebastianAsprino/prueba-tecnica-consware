@@ -13,7 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         modelBuilder.Entity<Employee>(entity =>
         {
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(Employee.NameMaxLength);
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.AccessCode).IsRequired().HasMaxLength(AccessCodeGenerator.Length);
             entity.HasIndex(e => e.AccessCode).IsUnique();
@@ -21,9 +21,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<ExpenseRequest>(entity =>
         {
-            entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.RejectionReason).HasMaxLength(500);
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(ExpenseRequest.CategoryMaxLength);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(ExpenseRequest.DescriptionMaxLength);
+            entity.Property(e => e.RejectionReason).HasMaxLength(ExpenseRequest.RejectionReasonMaxLength);
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Status).HasConversion<string>();
             entity.HasOne(e => e.Employee)
